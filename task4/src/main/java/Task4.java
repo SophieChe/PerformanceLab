@@ -36,8 +36,16 @@ public class Task4 {
     private static List<Integer> readFile(Path path) throws IOException {
         List<Integer> list = new ArrayList<>();
         try (Scanner scanner = new Scanner(path)) {
-            while (scanner.hasNextInt()) {
-                list.add(scanner.nextInt());
+            while (scanner.hasNext()) {
+                String element = scanner.next();
+                try {
+                    int value = Integer.parseInt(element);
+                    list.add(value);
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException(
+                            "Неверный формат числа. Допускаются только целые числа.", e
+                    );
+                }
             }
         } catch (IOException e) {
             throw new IOException("Ошибка чтения файла: " + e.getMessage(), e);
@@ -59,8 +67,9 @@ public class Task4 {
     }
 
     private static String countSteps(List<Integer> list) {
-        int median = list.get(list.size() / 2 - 1);
-        int medianPosition = list.size() / 2 - 1;
+        int median = list.get(list.size() / 2);
+        System.out.println(median);
+        int medianPosition = list.size() / 2;
         int step = 1;
         int p = 0;
 

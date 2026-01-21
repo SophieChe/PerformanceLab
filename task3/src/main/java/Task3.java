@@ -37,7 +37,9 @@ public class Task3 {
         Path testsFile = Paths.get(args[1]);
         Path reportFile = Paths.get(args[2]);
 
-        checkResources(List.of(valuesFile, testsFile, reportFile));
+        checkResources(List.of(valuesFile, testsFile), reportFile);
+
+
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -45,19 +47,27 @@ public class Task3 {
         KeyValueFileDto keyValueFileDto = objectMapper.readValue(valuesFile.toFile(), KeyValueFileDto.class);
         KeyTestsFileDto keyTestsFileDto = objectMapper.readValue(testsFile.toFile(), KeyTestsFileDto.class);
 
-        Map<Integer, String> valuesMap = new HashMap<>();
+        Map<Integer, String> valuesMap = fillMap(keyValueFileDto);
 
-        for (ValueDto value : keyValueFileDto.values()) {
-            if (valuesMap.containsKey(value.id())) {
-                log.warn("Дублирующий id в values.json: {}", value.id());
-            }
-            valuesMap.put(value.id(), value.value());
-        }
         for (TestDto test : keyTestsFileDto.tests()) {
             fillValues(test, valuesMap);
         }
 
         objectMapper.writerWithDefaultPrettyPrinter().writeValue(reportFile.toFile(), keyTestsFileDto);
+    }
+
+    private static Map<Integer, String> fillMap(KeyValueFileDto keyValueFileDto) {
+        Map<Integer, String> valuesMap = new HashMap<>();
+
+        for (ValueDto value : keyValueFileDto.values()) {
+            if (valuesMap.containsKey(value.id()) ) {
+                throw new IllegalStateException("Дублирующий id %d в values.json: ".formatted(value.id()));
+            } else if(value.value().isBlank()){
+                throw new IllegalStateException("Нет value в values.json для id %d: ".formatted(value.id()));
+            }
+            valuesMap.put(value.id(), value.value());
+        }
+        return valuesMap;
     }
 
     private static void fillValues(TestDto root, Map<Integer, String> valuesMap) {
@@ -74,7 +84,7 @@ public class Task3 {
         }
     }
 
-    private static void checkResources(List<Path> paths) {
+    private static void checkResources(List<Path> paths, Path reportFile) {
         for (Path path : paths) {
             if (!Files.exists(path)) {
                 throw new IllegalStateException("Файл не существует: " + path);
@@ -84,6 +94,13 @@ public class Task3 {
             }
             if (!Files.isReadable(path)) {
                 throw new IllegalStateException("Файл недоступен для чтения: " + path);
+            }
+        }
+        if (!Files.exists(reportFile)) {
+            try {
+                Files.createFile(reportFile);
+            } catch (IOException e) {
+                throw new RuntimeException("Не удалось создать report.json: " + reportFile, e);
             }
         }
     }
